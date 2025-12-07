@@ -149,32 +149,6 @@ body {
   overflow: hidden;
 }
 
-/* Toolbar */
-.toolbar {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 4px 8px;
-  background: #ece9d8;
-  border: 1px solid #aca899;
-}
-
-.control-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.control-group label {
-  font-size: 11px;
-  color: #000;
-}
-
-.control-group input[type="range"] {
-  width: 80px;
-  height: 16px;
-}
-
 /* Canvas Container */
 #canvas-container {
   position: relative;

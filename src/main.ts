@@ -48,8 +48,6 @@ class App {
   }
 
   private setupEventListeners(): void {
-    const gridSlider = document.getElementById("grid-density") as HTMLInputElement;
-    const sensitivitySlider = document.getElementById("depth-sensitivity") as HTMLInputElement;
     const canvasContainer = document.getElementById("canvas-container") as HTMLDivElement;
 
     const resizeObserver = new ResizeObserver(() => {
@@ -59,15 +57,6 @@ class App {
       this.grid = this.createGrid(width, height);
     });
     resizeObserver.observe(canvasContainer);
-
-    gridSlider.addEventListener("input", () => {
-      this.state.tileSize = 6 + Math.floor((80 - parseInt(gridSlider.value, 10)) / 2);
-      this.grid = this.createGrid();
-    });
-
-    sensitivitySlider.addEventListener("input", () => {
-      this.state.threshold = 0.9 - parseInt(sensitivitySlider.value, 10) / 12;
-    });
 
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && this.state.running) {
