@@ -37,18 +37,14 @@ export class Renderer {
     this.canvas.height = height;
   }
 
-  render(grid: Grid): void {
+  render(grid: Grid, tileSize: number): void {
     const { width, height } = this.canvas;
-    const cols = grid.getCols();
-    const rows = grid.getRows();
-    const tileWidth = width / cols;
-    const tileHeight = height / rows;
 
     this.ctx.fillStyle = COLORS.raised;
     this.ctx.fillRect(0, 0, width, height);
 
     grid.forEachTile((tile) => {
-      this.renderTile(tile, tileWidth, tileHeight);
+      this.renderTile(tile, tileSize, tileSize);
     });
   }
 
