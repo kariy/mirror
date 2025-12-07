@@ -1,0 +1,19 @@
+{
+  "name": "minesweeper-pin-art",
+  "version": "0.1.0",
+  "description": "A browser-based Minesweeper-themed pin-art effect using webcam and body segmentation",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "^5.4.2"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.14"
+  }
+}
