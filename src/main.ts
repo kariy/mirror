@@ -1,12 +1,16 @@
 import { WebcamCapture } from "./core/webcam";
 import { Segmenter } from "./core/segmentation";
 import { Grid } from "./core/grid";
-import { Renderer } from "./core/renderer";
+import type { Renderer } from "./core/renderer";
+import { MinesweeperRenderer, FlipDotRenderer } from "./renderers";
+
+type RendererType = "minesweeper" | "flipdot";
 
 interface AppState {
   running: boolean;
   tileSize: number;
   threshold: number;
+  rendererType: RendererType;
 }
 
 class App {
@@ -14,6 +18,7 @@ class App {
   private segmenter: Segmenter;
   private grid: Grid;
   private renderer: Renderer;
+  private canvas: HTMLCanvasElement;
   private state: AppState;
   private animationFrameId: number | null = null;
   private lastSegmentTime = 0;
@@ -21,21 +26,37 @@ class App {
 
   constructor() {
     const video = document.getElementById("webcam") as HTMLVideoElement;
-    const canvas = document.getElementById("main-canvas") as HTMLCanvasElement;
+    this.canvas = document.getElementById("main-canvas") as HTMLCanvasElement;
 
     this.webcam = new WebcamCapture(video);
     this.segmenter = new Segmenter();
-    this.renderer = new Renderer(canvas);
 
     this.state = {
       running: false,
       tileSize: 16,
       threshold: 0.3,
+      rendererType: "minesweeper",
     };
 
+    this.renderer = this.createRenderer(this.state.rendererType);
     this.grid = this.createGrid();
     this.setupEventListeners();
     this.startCamera();
+  }
+
+  private createRenderer(type: RendererType): Renderer {
+    switch (type) {
+      case "flipdot":
+        return new FlipDotRenderer(this.canvas);
+      case "minesweeper":
+      default:
+        return new MinesweeperRenderer(this.canvas);
+    }
+  }
+
+  setRenderer(type: RendererType): void {
+    this.state.rendererType = type;
+    this.renderer = this.createRenderer(type);
   }
 
   private createGrid(width?: number, height?: number): Grid {
@@ -44,7 +65,7 @@ class App {
     const h = height ?? canvasContainer.clientHeight ?? 480;
     const cols = Math.max(1, Math.floor(w / this.state.tileSize));
     const rows = Math.max(1, Math.floor(h / this.state.tileSize));
-    return new Grid({ cols, rows, mineRatio: 0.05 });
+    return new Grid({ cols, rows });
   }
 
   private setupEventListeners(): void {
@@ -119,7 +140,10 @@ class App {
   }
 }
 
-new App();
+const app = new App();
+
+// Expose for console switching: app.setRenderer("flipdot") or app.setRenderer("minesweeper")
+(window as unknown as { app: App }).app = app;
 
 function setupWindowDrag() {
   const windowEl = document.getElementById("window") as HTMLDivElement;
