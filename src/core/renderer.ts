@@ -40,12 +40,18 @@ export class Renderer {
   render(grid: Grid, tileSize: number): void {
     const { width, height } = this.canvas;
 
+    this.ctx.save();
+    this.ctx.translate(width, 0);
+    this.ctx.scale(-1, 1);
+
     this.ctx.fillStyle = COLORS.raised;
     this.ctx.fillRect(0, 0, width, height);
 
     grid.forEachTile((tile) => {
       this.renderTile(tile, tileSize, tileSize);
     });
+
+    this.ctx.restore();
   }
 
   private renderTile(tile: TileState, tileWidth: number, tileHeight: number): void {
