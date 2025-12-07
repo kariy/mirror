@@ -132,6 +132,36 @@ class App {
 
 new App();
 
+function setupWindowDrag() {
+  const windowEl = document.getElementById("window") as HTMLDivElement;
+  const titleBar = document.querySelector(".title-bar") as HTMLDivElement;
+
+  let isDragging = false;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  titleBar.addEventListener("mousedown", (e) => {
+    if ((e.target as HTMLElement).closest(".title-bar-controls")) return;
+    isDragging = true;
+    offsetX = e.clientX - windowEl.offsetLeft;
+    offsetY = e.clientY - windowEl.offsetTop;
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    const x = Math.max(0, e.clientX - offsetX);
+    const y = Math.max(0, e.clientY - offsetY);
+    windowEl.style.left = `${x}px`;
+    windowEl.style.top = `${y}px`;
+  });
+
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+  });
+}
+
+setupWindowDrag();
+
 function updateClock() {
   const clock = document.getElementById("clock");
   if (clock) {
