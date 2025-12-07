@@ -11,7 +11,6 @@ interface WindowState {
   type: RendererType;
   element: HTMLDivElement;
   canvas: HTMLCanvasElement;
-  container: HTMLDivElement;
   renderer: Renderer;
   grid: Grid;
 }
@@ -21,6 +20,8 @@ interface AppState {
   tileSize: number;
   threshold: number;
   activeWindow: string;
+  videoWidth: number;
+  videoHeight: number;
 }
 
 class App {
@@ -42,11 +43,22 @@ class App {
       tileSize: 16,
       threshold: 0.3,
       activeWindow: "window-minesweeper",
+      videoWidth: 1280,
+      videoHeight: 720,
     };
 
     this.initializeWindows();
+    this.resizeAllWindows();
+    this.renderActiveWindow();
     this.setupEventListeners();
     this.startCamera();
+  }
+
+  private renderActiveWindow(): void {
+    const activeWin = this.windows.get(this.state.activeWindow);
+    if (activeWin) {
+      activeWin.renderer.render(activeWin.grid, this.state.tileSize);
+    }
   }
 
   private initializeWindows(): void {
@@ -56,17 +68,15 @@ class App {
       const id = element.id;
       const type = element.dataset.renderer as RendererType;
       const canvas = element.querySelector("canvas") as HTMLCanvasElement;
-      const container = element.querySelector(".canvas-container") as HTMLDivElement;
 
       const renderer = this.createRenderer(type, canvas);
-      const grid = this.createGrid(container);
+      const grid = this.createGrid();
 
       this.windows.set(id, {
         id,
         type,
         element,
         canvas,
-        container,
         renderer,
         grid,
       });
@@ -83,29 +93,22 @@ class App {
     }
   }
 
-  private createGrid(container: HTMLDivElement): Grid {
-    const w = container.clientWidth || 640;
-    const h = container.clientHeight || 480;
-    const cols = Math.max(1, Math.floor(w / this.state.tileSize));
-    const rows = Math.max(1, Math.floor(h / this.state.tileSize));
+  private createGrid(): Grid {
+    const cols = Math.max(1, Math.floor(this.state.videoWidth / this.state.tileSize));
+    const rows = Math.max(1, Math.floor(this.state.videoHeight / this.state.tileSize));
     return new Grid({ cols, rows });
   }
 
-  private setupEventListeners(): void {
-    // Resize observers for each window
+  private resizeAllWindows(): void {
     this.windows.forEach((win) => {
-      const resizeObserver = new ResizeObserver(() => {
-        const width = win.container.clientWidth;
-        const height = win.container.clientHeight;
-        win.renderer.resize(width, height);
-        win.grid = this.createGrid(win.container);
-      });
-      resizeObserver.observe(win.container);
-
-      // Window dragging
-      this.setupWindowDrag(win.element);
+      win.canvas.width = this.state.videoWidth;
+      win.canvas.height = this.state.videoHeight;
+      win.renderer.resize(this.state.videoWidth, this.state.videoHeight);
+      win.grid = this.createGrid();
     });
+  }
 
+  private setupEventListeners(): void {
     // Taskbar clicks
     const taskbarItems = document.querySelectorAll<HTMLButtonElement>(".taskbar-item");
     taskbarItems.forEach((item) => {
@@ -127,36 +130,6 @@ class App {
     });
   }
 
-  private setupWindowDrag(windowEl: HTMLDivElement): void {
-    const titleBar = windowEl.querySelector(".title-bar") as HTMLDivElement;
-
-    let isDragging = false;
-    let offsetX = 0;
-    let offsetY = 0;
-
-    titleBar.addEventListener("mousedown", (e) => {
-      if ((e.target as HTMLElement).closest(".title-bar-controls")) return;
-      isDragging = true;
-      offsetX = e.clientX - windowEl.offsetLeft;
-      offsetY = e.clientY - windowEl.offsetTop;
-      
-      // Bring to front when dragging
-      this.activateWindow(windowEl.id);
-    });
-
-    document.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      const x = Math.max(0, e.clientX - offsetX);
-      const y = Math.max(0, e.clientY - offsetY);
-      windowEl.style.left = `${x}px`;
-      windowEl.style.top = `${y}px`;
-    });
-
-    document.addEventListener("mouseup", () => {
-      isDragging = false;
-    });
-  }
-
   private activateWindow(windowId: string): void {
     this.state.activeWindow = windowId;
 
@@ -170,26 +143,17 @@ class App {
     taskbarItems.forEach((item) => {
       item.classList.toggle("active", item.dataset.window === windowId);
     });
-
-    // Resize active window's canvas
-    const activeWin = this.windows.get(windowId);
-    if (activeWin) {
-      const width = activeWin.container.clientWidth;
-      const height = activeWin.container.clientHeight;
-      activeWin.renderer.resize(width, height);
-      activeWin.grid = this.createGrid(activeWin.container);
-    }
   }
 
   private async startCamera(): Promise<void> {
     try {
       await this.segmenter.initialize();
-      await this.webcam.start({ width: 640, height: 480 });
+      await this.webcam.start({ width: 1280, height: 720 });
 
-      // Initialize all window sizes
-      this.windows.forEach((win) => {
-        win.renderer.resize(win.container.clientWidth, win.container.clientHeight);
-      });
+      this.state.videoWidth = this.webcam.getWidth();
+      this.state.videoHeight = this.webcam.getHeight();
+
+      this.resizeAllWindows();
 
       this.state.running = true;
       this.startLoop();
