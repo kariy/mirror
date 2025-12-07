@@ -42,6 +42,23 @@ body {
   display: flex;
 }
 
+@media (max-width: 768px) {
+  .xp-window {
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 40px;
+    transform: none;
+    border-radius: 4px 4px 0 0;
+  }
+
+  .xp-window .canvas-container canvas {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+}
+
 /* Title Bar */
 .title-bar {
   background: linear-gradient(180deg, 
@@ -152,6 +169,10 @@ body {
   border: 2px inset #aca899;
   background: #c0c0c0;
   overflow: hidden;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .canvas-container canvas {

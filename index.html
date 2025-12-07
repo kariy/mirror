@@ -66,6 +66,35 @@
         </div>
       </div>
 
+      <!-- ASCII Window -->
+      <div id="window-ascii" class="xp-window" data-renderer="ascii">
+        <div class="title-bar">
+          <div class="title-bar-icon">▓</div>
+          <div class="title-bar-text">ASCII Art</div>
+          <div class="title-bar-controls">
+            <button class="xp-btn minimize" aria-label="Minimize">_</button>
+            <button class="xp-btn maximize" aria-label="Maximize">□</button>
+            <button class="xp-btn close" aria-label="Close">×</button>
+          </div>
+        </div>
+        <div class="menu-bar">
+          <span class="menu-item">View</span>
+          <span class="menu-item">Help</span>
+        </div>
+        <div class="window-content">
+          <div class="canvas-container">
+            <canvas id="canvas-ascii"></canvas>
+          </div>
+          <div class="error-message hidden">
+            <p>Camera access denied. Please enable camera permissions.</p>
+          </div>
+        </div>
+        <div class="status-bar">
+          <div class="status-section">▓ Characters</div>
+          <div class="status-section">Pin-Art Mode</div>
+        </div>
+      </div>
+
       <video id="webcam" autoplay playsinline></video>
 
       <div id="taskbar">
@@ -76,6 +105,7 @@
         <div class="taskbar-items">
           <button class="taskbar-item active" data-window="window-minesweeper">💣 Minesweeper</button>
           <button class="taskbar-item" data-window="window-flipdot">🟡 FlipDot</button>
+          <button class="taskbar-item" data-window="window-ascii">▓ ASCII</button>
         </div>
         <div class="system-tray">
           <span id="clock"></span>

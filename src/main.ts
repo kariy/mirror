@@ -2,9 +2,9 @@ import { WebcamCapture } from "./core/webcam";
 import { Segmenter } from "./core/segmentation";
 import { Grid } from "./core/grid";
 import type { Renderer } from "./core/renderer";
-import { MinesweeperRenderer, FlipDotRenderer } from "./renderers";
+import { MinesweeperRenderer, FlipDotRenderer, AsciiRenderer } from "./renderers";
 
-type RendererType = "minesweeper" | "flipdot";
+type RendererType = "minesweeper" | "flipdot" | "ascii";
 
 interface WindowState {
   id: string;
@@ -87,6 +87,8 @@ class App {
     switch (type) {
       case "flipdot":
         return new FlipDotRenderer(canvas);
+      case "ascii":
+        return new AsciiRenderer(canvas);
       case "minesweeper":
       default:
         return new MinesweeperRenderer(canvas);
