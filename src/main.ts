@@ -6,19 +6,27 @@ import { MinesweeperRenderer, FlipDotRenderer } from "./renderers";
 
 type RendererType = "minesweeper" | "flipdot";
 
+interface WindowState {
+  id: string;
+  type: RendererType;
+  element: HTMLDivElement;
+  canvas: HTMLCanvasElement;
+  container: HTMLDivElement;
+  renderer: Renderer;
+  grid: Grid;
+}
+
 interface AppState {
   running: boolean;
   tileSize: number;
   threshold: number;
-  rendererType: RendererType;
+  activeWindow: string;
 }
 
 class App {
   private webcam: WebcamCapture;
   private segmenter: Segmenter;
-  private grid: Grid;
-  private renderer: Renderer;
-  private canvas: HTMLCanvasElement;
+  private windows: Map<string, WindowState> = new Map();
   private state: AppState;
   private animationFrameId: number | null = null;
   private lastSegmentTime = 0;
@@ -26,8 +34,6 @@ class App {
 
   constructor() {
     const video = document.getElementById("webcam") as HTMLVideoElement;
-    this.canvas = document.getElementById("main-canvas") as HTMLCanvasElement;
-
     this.webcam = new WebcamCapture(video);
     this.segmenter = new Segmenter();
 
@@ -35,50 +41,83 @@ class App {
       running: false,
       tileSize: 16,
       threshold: 0.3,
-      rendererType: "minesweeper",
+      activeWindow: "window-minesweeper",
     };
 
-    this.renderer = this.createRenderer(this.state.rendererType);
-    this.grid = this.createGrid();
+    this.initializeWindows();
     this.setupEventListeners();
     this.startCamera();
   }
 
-  private createRenderer(type: RendererType): Renderer {
+  private initializeWindows(): void {
+    const windowElements = document.querySelectorAll<HTMLDivElement>(".xp-window");
+
+    windowElements.forEach((element) => {
+      const id = element.id;
+      const type = element.dataset.renderer as RendererType;
+      const canvas = element.querySelector("canvas") as HTMLCanvasElement;
+      const container = element.querySelector(".canvas-container") as HTMLDivElement;
+
+      const renderer = this.createRenderer(type, canvas);
+      const grid = this.createGrid(container);
+
+      this.windows.set(id, {
+        id,
+        type,
+        element,
+        canvas,
+        container,
+        renderer,
+        grid,
+      });
+    });
+  }
+
+  private createRenderer(type: RendererType, canvas: HTMLCanvasElement): Renderer {
     switch (type) {
       case "flipdot":
-        return new FlipDotRenderer(this.canvas);
+        return new FlipDotRenderer(canvas);
       case "minesweeper":
       default:
-        return new MinesweeperRenderer(this.canvas);
+        return new MinesweeperRenderer(canvas);
     }
   }
 
-  setRenderer(type: RendererType): void {
-    this.state.rendererType = type;
-    this.renderer = this.createRenderer(type);
-  }
-
-  private createGrid(width?: number, height?: number): Grid {
-    const canvasContainer = document.getElementById("canvas-container") as HTMLDivElement;
-    const w = width ?? canvasContainer.clientWidth ?? 640;
-    const h = height ?? canvasContainer.clientHeight ?? 480;
+  private createGrid(container: HTMLDivElement): Grid {
+    const w = container.clientWidth || 640;
+    const h = container.clientHeight || 480;
     const cols = Math.max(1, Math.floor(w / this.state.tileSize));
     const rows = Math.max(1, Math.floor(h / this.state.tileSize));
     return new Grid({ cols, rows });
   }
 
   private setupEventListeners(): void {
-    const canvasContainer = document.getElementById("canvas-container") as HTMLDivElement;
+    // Resize observers for each window
+    this.windows.forEach((win) => {
+      const resizeObserver = new ResizeObserver(() => {
+        const width = win.container.clientWidth;
+        const height = win.container.clientHeight;
+        win.renderer.resize(width, height);
+        win.grid = this.createGrid(win.container);
+      });
+      resizeObserver.observe(win.container);
 
-    const resizeObserver = new ResizeObserver(() => {
-      const width = canvasContainer.clientWidth;
-      const height = canvasContainer.clientHeight;
-      this.renderer.resize(width, height);
-      this.grid = this.createGrid(width, height);
+      // Window dragging
+      this.setupWindowDrag(win.element);
     });
-    resizeObserver.observe(canvasContainer);
 
+    // Taskbar clicks
+    const taskbarItems = document.querySelectorAll<HTMLButtonElement>(".taskbar-item");
+    taskbarItems.forEach((item) => {
+      item.addEventListener("click", () => {
+        const windowId = item.dataset.window;
+        if (windowId) {
+          this.activateWindow(windowId);
+        }
+      });
+    });
+
+    // Visibility change
     document.addEventListener("visibilitychange", () => {
       if (document.hidden && this.state.running) {
         this.pauseLoop();
@@ -88,22 +127,77 @@ class App {
     });
   }
 
-  private async startCamera(): Promise<void> {
-    const errorMessage = document.getElementById("error-message") as HTMLDivElement;
-    errorMessage.classList.add("hidden");
+  private setupWindowDrag(windowEl: HTMLDivElement): void {
+    const titleBar = windowEl.querySelector(".title-bar") as HTMLDivElement;
 
+    let isDragging = false;
+    let offsetX = 0;
+    let offsetY = 0;
+
+    titleBar.addEventListener("mousedown", (e) => {
+      if ((e.target as HTMLElement).closest(".title-bar-controls")) return;
+      isDragging = true;
+      offsetX = e.clientX - windowEl.offsetLeft;
+      offsetY = e.clientY - windowEl.offsetTop;
+      
+      // Bring to front when dragging
+      this.activateWindow(windowEl.id);
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      const x = Math.max(0, e.clientX - offsetX);
+      const y = Math.max(0, e.clientY - offsetY);
+      windowEl.style.left = `${x}px`;
+      windowEl.style.top = `${y}px`;
+    });
+
+    document.addEventListener("mouseup", () => {
+      isDragging = false;
+    });
+  }
+
+  private activateWindow(windowId: string): void {
+    this.state.activeWindow = windowId;
+
+    // Update window visibility
+    this.windows.forEach((win) => {
+      win.element.classList.toggle("active", win.id === windowId);
+    });
+
+    // Update taskbar
+    const taskbarItems = document.querySelectorAll<HTMLButtonElement>(".taskbar-item");
+    taskbarItems.forEach((item) => {
+      item.classList.toggle("active", item.dataset.window === windowId);
+    });
+
+    // Resize active window's canvas
+    const activeWin = this.windows.get(windowId);
+    if (activeWin) {
+      const width = activeWin.container.clientWidth;
+      const height = activeWin.container.clientHeight;
+      activeWin.renderer.resize(width, height);
+      activeWin.grid = this.createGrid(activeWin.container);
+    }
+  }
+
+  private async startCamera(): Promise<void> {
     try {
       await this.segmenter.initialize();
       await this.webcam.start({ width: 640, height: 480 });
 
-      const canvasContainer = document.getElementById("canvas-container") as HTMLDivElement;
-      this.renderer.resize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+      // Initialize all window sizes
+      this.windows.forEach((win) => {
+        win.renderer.resize(win.container.clientWidth, win.container.clientHeight);
+      });
 
       this.state.running = true;
       this.startLoop();
     } catch (error) {
       console.error("Failed to start:", error);
-      errorMessage.classList.remove("hidden");
+      document.querySelectorAll(".error-message").forEach((el) => {
+        el.classList.remove("hidden");
+      });
     }
   }
 
@@ -120,11 +214,15 @@ class App {
         }
       }
 
-      this.grid.updateFromMask(
-        (x, y) => this.segmenter.getMaskValueAt(x, y),
-        this.state.threshold
-      );
-      this.renderer.render(this.grid, this.state.tileSize);
+      // Only render active window
+      const activeWin = this.windows.get(this.state.activeWindow);
+      if (activeWin) {
+        activeWin.grid.updateFromMask(
+          (x, y) => this.segmenter.getMaskValueAt(x, y),
+          this.state.threshold
+        );
+        activeWin.renderer.render(activeWin.grid, this.state.tileSize);
+      }
 
       this.animationFrameId = requestAnimationFrame(loop);
     };
@@ -140,40 +238,7 @@ class App {
   }
 }
 
-const app = new App();
-
-// Expose for console switching: app.setRenderer("flipdot") or app.setRenderer("minesweeper")
-(window as unknown as { app: App }).app = app;
-
-function setupWindowDrag() {
-  const windowEl = document.getElementById("window") as HTMLDivElement;
-  const titleBar = document.querySelector(".title-bar") as HTMLDivElement;
-
-  let isDragging = false;
-  let offsetX = 0;
-  let offsetY = 0;
-
-  titleBar.addEventListener("mousedown", (e) => {
-    if ((e.target as HTMLElement).closest(".title-bar-controls")) return;
-    isDragging = true;
-    offsetX = e.clientX - windowEl.offsetLeft;
-    offsetY = e.clientY - windowEl.offsetTop;
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    const x = Math.max(0, e.clientX - offsetX);
-    const y = Math.max(0, e.clientY - offsetY);
-    windowEl.style.left = `${x}px`;
-    windowEl.style.top = `${y}px`;
-  });
-
-  document.addEventListener("mouseup", () => {
-    isDragging = false;
-  });
-}
-
-setupWindowDrag();
+new App();
 
 function updateClock() {
   const clock = document.getElementById("clock");

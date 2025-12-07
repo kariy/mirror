@@ -3,12 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Minesweeper Pin-Art</title>
+    <title>Pin-Art Mirror</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
     <div id="desktop">
-      <div id="window" class="xp-window">
+      <!-- Minesweeper Window -->
+      <div id="window-minesweeper" class="xp-window active" data-renderer="minesweeper">
         <div class="title-bar">
           <div class="title-bar-icon">💣</div>
           <div class="title-bar-text">Minesweeper</div>
@@ -23,20 +24,49 @@
           <span class="menu-item">Help</span>
         </div>
         <div class="window-content">
-
-          <div id="canvas-container">
-            <canvas id="main-canvas"></canvas>
-            <video id="webcam" autoplay playsinline></video>
+          <div class="canvas-container">
+            <canvas id="canvas-minesweeper"></canvas>
           </div>
-          <div id="error-message" class="hidden">
+          <div class="error-message hidden">
             <p>Camera access denied. Please enable camera permissions.</p>
           </div>
         </div>
         <div class="status-bar">
-          <div class="status-section">Mines: 💣</div>
+          <div class="status-section">💣 Mines</div>
           <div class="status-section">Pin-Art Mode</div>
         </div>
       </div>
+
+      <!-- FlipDot Window -->
+      <div id="window-flipdot" class="xp-window" data-renderer="flipdot">
+        <div class="title-bar">
+          <div class="title-bar-icon">🟡</div>
+          <div class="title-bar-text">FlipDot Display</div>
+          <div class="title-bar-controls">
+            <button class="xp-btn minimize" aria-label="Minimize">_</button>
+            <button class="xp-btn maximize" aria-label="Maximize">□</button>
+            <button class="xp-btn close" aria-label="Close">×</button>
+          </div>
+        </div>
+        <div class="menu-bar">
+          <span class="menu-item">View</span>
+          <span class="menu-item">Help</span>
+        </div>
+        <div class="window-content">
+          <div class="canvas-container">
+            <canvas id="canvas-flipdot"></canvas>
+          </div>
+          <div class="error-message hidden">
+            <p>Camera access denied. Please enable camera permissions.</p>
+          </div>
+        </div>
+        <div class="status-bar">
+          <div class="status-section">🟡 Dots</div>
+          <div class="status-section">Pin-Art Mode</div>
+        </div>
+      </div>
+
+      <video id="webcam" autoplay playsinline></video>
 
       <div id="taskbar">
         <button class="start-button">
@@ -44,7 +74,8 @@
           <span>start</span>
         </button>
         <div class="taskbar-items">
-          <div class="taskbar-item active">💣 Minesweeper</div>
+          <button class="taskbar-item active" data-window="window-minesweeper">💣 Minesweeper</button>
+          <button class="taskbar-item" data-window="window-flipdot">🟡 FlipDot</button>
         </div>
         <div class="system-tray">
           <span id="clock"></span>
