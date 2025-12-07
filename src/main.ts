@@ -17,7 +17,7 @@ class App {
   private state: AppState;
   private animationFrameId: number | null = null;
   private lastSegmentTime = 0;
-  private segmentInterval = 50;
+  private segmentInterval = 33;
 
   constructor() {
     const video = document.getElementById("webcam") as HTMLVideoElement;
@@ -30,7 +30,7 @@ class App {
     this.state = {
       running: false,
       tileSize: 16,
-      threshold: 0.5,
+      threshold: 0.3,
     };
 
     this.grid = this.createGrid();
@@ -66,7 +66,7 @@ class App {
     });
 
     sensitivitySlider.addEventListener("input", () => {
-      this.state.threshold = 1 - parseInt(sensitivitySlider.value, 10) / 10;
+      this.state.threshold = 0.9 - parseInt(sensitivitySlider.value, 10) / 12;
     });
 
     document.addEventListener("visibilitychange", () => {
